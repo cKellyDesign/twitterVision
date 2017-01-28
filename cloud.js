@@ -1,8 +1,10 @@
 var express = require('express');
 var path = require('path');
+var http = require('http');
 var _ = require('underscore');
-var app = express();
 
+
+var app = express();
 // Static Express Server Settings
 app.use(express.static('./public'));
 app.get('*', function (req, res) {
@@ -13,6 +15,72 @@ app.get('*', function (req, res) {
 var server = app.listen(process.env.PORT || 3000, function() {
 	console.log('Express Server running on port %s', this.address().port);
 });
+
+
+
+// Initialize authorization for Tiwtter API
+var OAuth = require('oauth'),
+	Oath2 = OAuth.OAuth2;
+var Twitter = require('twitter')
+	twiCli = null;
+
+
+var consumerKey = require('./twitterConfig').consumerKey, 
+	consumerSecret = require('./twitterConfig').consumerSecret, 
+	bearerToken = require('./twitterConfig').bearerToken;
+
+var oa = new Oath2(
+	consumerKey,
+	consumerSecret, 
+	'https://api.twitter.com/', 
+	null,
+	'oauth2/token', 
+	null
+);
+
+// REST GET Methods
+function twitterGetSearchRouter (params) {
+	if (typeof params === 'undefined') params = { q: 'resist', count: 2 };
+
+	twiCli.get('search/tweets', params, twitterSearchHandler);
+}
+function twitterGetSearchHandler (err, tweets, res) {
+	if (err) return console.log('GET error: ', err, bearerToken);
+	console.log('\n\nTWEETS', tweets);
+}
+
+// STREAMING GET Methods
+function twitterStreamSearchRouter (params) {
+	if (typeof params === 'undefined') params = { track: 'resist'};
+
+	twiCli.stream('statuses/firehose', params, twitterStreamSearchHandler);
+	
+}
+function twitterStreamSearchHandler (stream) {
+	
+	stream.on('data', function (event) {
+		console.log('event: ', event && event.text);
+	});
+
+	stream.on('error', function (err) { console.log("stream error: ",err, bearerToken); });
+}
+
+
+oa.getOAuthAccessToken('', {'grant_type':'client_credentials'}, function (e, access_token, refresh_token, results){
+	if (e) console.log('error: ', error);
+	bearerToken = access_token;
+
+	twiCli = new Twitter({
+		consumer_key: 		consumerKey,
+		consumer_secret: 	consumerSecret,
+		bearer_token: 		bearerToken
+	});
+
+	twitterGetSearchRouter();
+	// twitterStreamSearchRouter(); // currently returning 401 Status : Unauthorized for some reason
+});
+
+
 
 
 // Init IO
