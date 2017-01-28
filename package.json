@@ -1,0 +1,16 @@
+{
+  "name": "twitterVision",
+  "version": "1.0.0",
+  "description": "p5.js sketch using streaming twitter data served from Express serve via Socket.io",
+  "main": "cloud.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Conor Kelly",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.14.0",
+    "socket.io": "^1.7.2",
+    "underscore": "^1.8.3"
+  }
+}
