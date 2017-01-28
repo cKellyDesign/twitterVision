@@ -42,7 +42,7 @@ var oa = new Oath2(
 function twitterGetSearchRouter (params) {
 	if (typeof params === 'undefined') params = { q: 'resist', count: 2 };
 
-	twiCli.get('search/tweets', params, twitterSearchHandler);
+	twiCli.get('search/tweets', params, twitterGetSearchHandler);
 }
 function twitterGetSearchHandler (err, tweets, res) {
 	if (err) return console.log('GET error: ', err, bearerToken);
