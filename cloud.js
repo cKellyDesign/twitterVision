@@ -38,47 +38,70 @@ var oa = new Oath2(
 	null
 );
 
+var tweetLog = [];
+
+// todo - convert this to a Router() for Twitter API requests
+function hitTwitter () {
+	oa.getOAuthAccessToken('', {'grant_type':'client_credentials'}, function (e, access_token, refresh_token, results){
+		if (e) console.log('error: ', error);
+		bearerToken = access_token;
+
+		var oauthObj = {
+			consumer_key: 		consumerKey,
+			consumer_secret: 	consumerSecret,
+			bearer_token: 		bearerToken
+		};
+
+		twiCli = new Twitter(oauthObj);
+
+		twitterGetSearchRouter();
+		// twitterStreamSearchRouter(); // currently returning 401 Status : Unauthorized for some reason
+		// twitterStreamStatusesFilterRouter();
+	});
+}
+
+hitTwitter();
+
 // REST GET Methods
 function twitterGetSearchRouter (params) {
-	if (typeof params === 'undefined') params = { q: 'resist', count: 2 };
+	if (typeof params === 'undefined') params = { q: 'resist', count: '1000'};
 
 	twiCli.get('search/tweets', params, twitterGetSearchHandler);
 }
 function twitterGetSearchHandler (err, tweets, res) {
 	if (err) return console.log('GET error: ', err, bearerToken);
-	console.log('\n\nTWEETS', tweets);
+	// tweetLog = _.union(tweetLog, tweets.statuses);
+	tweetLog = tweets.statuses;
+
+	console.log("TWEETS UPDATED - length: ", tweetLog.length);
 }
 
 // STREAMING GET Methods
-function twitterStreamSearchRouter (params) {
-	if (typeof params === 'undefined') params = { track: 'resist'};
-
-	twiCli.stream('statuses/firehose', params, twitterStreamSearchHandler);
+// function twitterStreamSearchRouter (params) {
+// 	if (typeof params === 'undefined') params = { track: 'resist'};
+// 	twiCli.stream('statuses/firehose', params, twitterStreamSearchHandler);
 	
-}
-function twitterStreamSearchHandler (stream) {
-	
-	stream.on('data', function (event) {
-		console.log('event: ', event && event.text);
-	});
+// }
+// function twitterStreamSearchHandler (stream) {
+// 	stream.on('data', function (event) {
+// 		console.log('event: ', event && event.text);
+// 	});
+// 	stream.on('error', function (err) { console.log("stream error: ",err, bearerToken); });
+// }
 
-	stream.on('error', function (err) { console.log("stream error: ",err, bearerToken); });
-}
+// STREAMING POST statuses/filter
+// function twitterStreamStatusesFilterRouter (params) {
+// 	if (!params || typeof params === 'undefined') params = { track: 'resist'};
 
+// 	twiCli.stream('statuses/filter', params, twitterStreamStatusesFilterHandler);
+// }
+// function twitterStreamStatusesFilterHandler (stream) {
+// 	stream.on('data', function (event) {
+// 		console.log('event: ', event && event.text);
+// 	});
 
-oa.getOAuthAccessToken('', {'grant_type':'client_credentials'}, function (e, access_token, refresh_token, results){
-	if (e) console.log('error: ', error);
-	bearerToken = access_token;
-
-	twiCli = new Twitter({
-		consumer_key: 		consumerKey,
-		consumer_secret: 	consumerSecret,
-		bearer_token: 		bearerToken
-	});
-
-	twitterGetSearchRouter();
-	// twitterStreamSearchRouter(); // currently returning 401 Status : Unauthorized for some reason
-});
+// 	stream.on('error', function (err) { console.log("stream error: ",err, bearerToken); });
+// }
 
 
 
@@ -90,6 +113,8 @@ var connections = [];
 // Listen for connection before assigning listeners
 io.sockets.on('connection', function (socket) {
 
+	// hitTwitter();
+
 	// Listen for disconnection from either Oz or Dorthy
 	socket.once('disconnect', function() {
 		connections.splice(connections.indexOf(socket), 1);
@@ -97,6 +122,10 @@ io.sockets.on('connection', function (socket) {
 		socket.disconnect();
 	});
 
+
+	socket.on('fetch-tweets', function () {
+		socket.emit('send-tweets', tweetLog);
+	});
 
 	connections.push(socket);
 });
