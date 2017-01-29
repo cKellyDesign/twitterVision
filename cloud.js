@@ -25,8 +25,8 @@ var Twitter = require('twitter')
 	twiCli = null;
 
 
-var consumerKey = require('./twitterConfig').consumerKey, 
-	consumerSecret = require('./twitterConfig').consumerSecret, 
+var consumerKey = process.env.CONSUMER_KEY || require('./twitterConfig').consumerKey, 
+	consumerSecret = process.env.CONSUMER_SECRET || require('./twitterConfig').consumerSecret, 
 	bearerToken = require('./twitterConfig').bearerToken;
 
 var oa = new Oath2(
