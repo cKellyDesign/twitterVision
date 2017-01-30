@@ -2,6 +2,11 @@
 new p5();
 
 
+var Tweet = function(model) {
+	this.state = model;
+}
+
+
 var DisplayView = function (p) {
 
 	p.tweets = [];
@@ -22,6 +27,18 @@ var DisplayView = function (p) {
 		p.renderFlakes();
 	};
 
+	p.createTweet = function (tweet) {
+		var tweetModel = {
+			text : tweet.text,
+			retweet_count : tweet.retweeted_status && tweet.retweeted_status.retweet_count,
+			user_screenname : tweet.user && tweet.user.screen_name,
+
+
+			
+		};
+
+		return new Tweet(tweetModel);
+	};
 
 
 	// Helper Functions
