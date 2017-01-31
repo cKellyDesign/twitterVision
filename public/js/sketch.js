@@ -1,16 +1,11 @@
 // Instantiate global p5
 new p5();
 
-
-var Tweet = function(model) {
-	this.state = model;
-}
-
-
 var DisplayView = function (p) {
 
 	p.tweets = [];
 	p.tweetDetails = null;
+	p.doDetectCollision = true;
 
 	p.preload = function () {
 		window.displayControl = new DisplayControl(p);
@@ -19,6 +14,10 @@ var DisplayView = function (p) {
 	p.setup = function () {
 		var Canvas = createCanvas(windowWidth, windowHeight); 
 		Canvas.parent('container');
+
+		// p.tweetDisplay = new TweetDisplay(p);
+		// noStroke();
+
 	};
 
 	p.draw = function () {
@@ -27,17 +26,9 @@ var DisplayView = function (p) {
 		p.renderFlakes();
 	};
 
-	p.createTweet = function (tweet) {
-		var tweetModel = {
-			text : tweet.text,
-			retweet_count : tweet.retweeted_status && tweet.retweeted_status.retweet_count,
-			user_screenname : tweet.user && tweet.user.screen_name,
-
-
-			
-		};
-
-		return new Tweet(tweetModel);
+	p.mouseClicked = function() {
+		removeElements();
+		p.doDetectCollision = true;
 	};
 
 
@@ -51,7 +42,11 @@ var DisplayView = function (p) {
 			if (!flake.c) flake.c = color('rgba(255, 255, 255, ' + random(0,1) + ')'); 
 			fill(flake.c);
 			
-			if (p.detectCollision(flake)) {
+			
+
+			if (p.doDetectCollision && p.detectCollision(flake)) {
+				p.doDetectCollision = false;
+				flake.hasBeenViewed = true;
 				p.generateTweetDetails(flake);
 			}
 
@@ -64,12 +59,20 @@ var DisplayView = function (p) {
 				flake.x = random(windowWidth);
 			}
 
+			if ( flake.hasBeenViewed ) {
+				stroke(color('rgba(255,255,255,1)'));
+			} else if (flake.tweetIMG) {
+				stroke(color('red'));
+			} else {
+				stroke(color('rgba(255,255,255,0)'));
+			}
 
 			var osX = p.determineOsillation(flake);
 
 			// draw snowflake
 			ellipse(flake.x + osX, flake.y, flake.size, flake.size);
 			if (!!p.tweetDetails) p.renderFlakeDetails();
+			// if (!!p.tweetDetails) p.tweetDisplay && p.tweetDisplay.update(flake);
 		}
 	};
 
@@ -83,10 +86,47 @@ var DisplayView = function (p) {
 	};
 	p.renderFlakeDetails = function () {
 		removeElements();
-		p.tweetDetailDiv = createDiv(p.tweetDetails.tweet.text);
-		p.tweetDetailDiv.position(p.tweetDetails.anchorX, p.tweetDetails.anchorY).style('color', color('red'));
+
+		console.log(p.tweetDetails.tweet);
+
+		var tweetHtml = '<p class="tweetText">' + 
+											'<a target="_blank" href="' + p.tweetDetails.tweet.tweetURL + '">' + p.tweetDetails.tweet.text + '</a></p>';
+		// if (p.tweetDetails.tweet.tweetIMG) {
+		// 	// debugger;
+		// 	tweetHtml = '<img src="' + p.tweetDetails.tweet.tweetIMG + '">' + tweetHtml;
+		// 	// tweetHtml = createImg(p.tweetDetails.tweet.tweetIMG);
+		// }
+		p.tweetDetailDiv = createDiv(tweetHtml);
+		p.tweetDetailDiv
+			.position(p.tweetDetails.anchorX, p.tweetDetails.anchorY)
+			.class('tweetDiv')
+			// .style('color', color('red'))
+			// .style('width', (windowWidth / 2))
+			// .style('border', '1px solid #aaa')
+		;
+
+		if (p.tweetDetails.tweet.tweetIMG) {
+			var tweetImage = new Image();
+
+			$(tweetImage).attr('src', p.tweetDetails.tweet.tweetIMG);
+			$('.tweetDiv').prepend(tweetImage);
+
+			// $(tweetImage).load(function (res, status, xhr){
+			// 	if (status === 'error') {
+
+			// 	} else {
+					
+			// 	}
+			// });
+
+			// $('<img src="' + p.tweetDetails.tweet.tweetIMG + '">').load(function() {
+			// 	// $('.tweetDiv').prepend(this);
+			// 	$(this).appendTo('.tweetDiv');
+			// });
+		}
+
+
 		p.tweetDetails = null;
-		// rect(p.tweetDetails.anchorX, p.tweetDetails.anchorY, 500, 250);
 	};
 
 	p.detectCollision = function (flake) {
@@ -119,21 +159,28 @@ var DisplayView = function (p) {
 
 	p.generateTweets = function (payload) {
 		var tweet = {};
-		console.log(payload[0]);
+		console.log(payload);
 		for (var i=0; i<payload.length; i++) {
 			tweet = payload[i];
+
+			if (tweet.entities && tweet.entities.media) console.log(i, tweet.entities.media);
 
 			var curr = {
 				text : tweet.text,
 				retweet_count : tweet.retweeted_status && tweet.retweeted_status.retweet_count,
 				user_screenname : tweet.user && tweet.user.screen_name,
+				tweetURL : ('https://twitter.com/' +  (tweet.user && tweet.user.screen_name) +'/status/' + tweet.id_str),
+				tweetIMG : tweet.entities.media && tweet.entities.media[0] && tweet.entities.media[0].expanded_url || null,
+
+				tweet: tweet,
 
 				x : random(windowWidth), // where to start on x
 				y : random((windowHeight * -1)), // where to start on y
 				size : p.determineSize(tweet), // how big to be
 				v : random(2, 5), // how fast to move
-				c : color('rgba(255, 255, 255, ' + random(0,1) + ')'),
-				o : { range: random(1, 5), dir: ((random(100) < 50) ? "left" : "right"), curr: 0 }
+				c : color('rgba(26,131,232, ' + random(0.2,1) + ')'),
+				o : { range: random(1, 5), dir: ((random(100) < 50) ? "left" : "right"), curr: 0 },
+				hasBeenViewed : false
 			};
 
 			p.tweets.push(curr);
