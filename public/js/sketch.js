@@ -72,7 +72,6 @@ var DisplayView = function (p) {
 			// draw snowflake
 			ellipse(flake.x + osX, flake.y, flake.size, flake.size);
 			if (!!p.tweetDetails) p.renderFlakeDetails();
-			// if (!!p.tweetDetails) p.tweetDisplay && p.tweetDisplay.update(flake);
 		}
 	};
 
@@ -87,15 +86,11 @@ var DisplayView = function (p) {
 	p.renderFlakeDetails = function () {
 		removeElements();
 
-		console.log(p.tweetDetails.tweet);
+		// console.log(p.tweetDetails.tweet);
 
 		var tweetHtml = '<p class="tweetText">' + 
-											'<a target="_blank" href="' + p.tweetDetails.tweet.tweetURL + '">' + p.tweetDetails.tweet.text + '</a></p>';
-		// if (p.tweetDetails.tweet.tweetIMG) {
-		// 	// debugger;
-		// 	tweetHtml = '<img src="' + p.tweetDetails.tweet.tweetIMG + '">' + tweetHtml;
-		// 	// tweetHtml = createImg(p.tweetDetails.tweet.tweetIMG);
-		// }
+							'<a target="_blank" href="' + p.tweetDetails.tweet.tweetURL + '">' + p.tweetDetails.tweet.text + '</a></p>';
+
 		p.tweetDetailDiv = createDiv(tweetHtml);
 		p.tweetDetailDiv
 			.position(p.tweetDetails.anchorX, p.tweetDetails.anchorY)
@@ -105,25 +100,14 @@ var DisplayView = function (p) {
 			// .style('border', '1px solid #aaa')
 		;
 
-		if (p.tweetDetails.tweet.tweetIMG) {
-			var tweetImage = new Image();
+		if (p.tweetDetails.tweet.tweetIMG) 
 
-			$(tweetImage).attr('src', p.tweetDetails.tweet.tweetIMG);
-			$('.tweetDiv').prepend(tweetImage);
+			$('.tweetDiv').prepend(
+				'<a class="tweetImgContainer" href="' + p.tweetDetails.tweet.tweetIMGlink + '" target="_blank">' +
+					'<img src="' + p.tweetDetails.tweet.tweetIMG + '">' +
+				'</a>'
+			);
 
-			// $(tweetImage).load(function (res, status, xhr){
-			// 	if (status === 'error') {
-
-			// 	} else {
-					
-			// 	}
-			// });
-
-			// $('<img src="' + p.tweetDetails.tweet.tweetIMG + '">').load(function() {
-			// 	// $('.tweetDiv').prepend(this);
-			// 	$(this).appendTo('.tweetDiv');
-			// });
-		}
 
 
 		p.tweetDetails = null;
@@ -163,14 +147,31 @@ var DisplayView = function (p) {
 		for (var i=0; i<payload.length; i++) {
 			tweet = payload[i];
 
-			if (tweet.entities && tweet.entities.media) console.log(i, tweet.entities.media);
+			// if (tweet.entities && tweet.entities.media) console.log(i, tweet.entities.media);
+
+			var d1 = new Date(tweet.created_at);
+			var d2 = new Date();
+			var d1MS = d1.getTime();
+			var d2MS = d2.getTime();
+
+			var ddMS	= d2MS - d1MS;
+			var ddS 	= ddMS / 1000;
+			var ddM 	= ddS / 60;
+			var ddH		= ddM / 60;
+
+			// console.log(ddH);
+
 
 			var curr = {
 				text : tweet.text,
 				retweet_count : tweet.retweeted_status && tweet.retweeted_status.retweet_count,
 				user_screenname : tweet.user && tweet.user.screen_name,
 				tweetURL : ('https://twitter.com/' +  (tweet.user && tweet.user.screen_name) +'/status/' + tweet.id_str),
-				tweetIMG : tweet.entities.media && tweet.entities.media[0] && tweet.entities.media[0].expanded_url || null,
+				tweetIMG : tweet.entities.media && tweet.entities.media[0] && tweet.entities.media[0].media_url || null,
+				tweetIMGlink : tweet.entities.media && tweet.entities.media[0] && tweet.entities.media[0].expanded_url,
+
+
+				// tweetAge : ( ( new Date().getTime() ) - ( new Date( tweet.created_at ).getTime() ) / 1000 / 60 / 60 ),
 
 				tweet: tweet,
 
@@ -182,27 +183,13 @@ var DisplayView = function (p) {
 				o : { range: random(1, 5), dir: ((random(100) < 50) ? "left" : "right"), curr: 0 },
 				hasBeenViewed : false
 			};
+			// console.log(curr.tweetAge);
 
 			p.tweets.push(curr);
 		}
 	}
 
 	p.determineSize = function (flake) {
-		// if (flake.retweet_count > 10000) {
-		// 	return 20;
-		// } else if (flake.retweet_count > 5000) {
-		// 	return 15;
-		// } else if (flake.retweet_count > 1000) {
-		// 	return 12;
-		// } else if (flake.retweet_count > 800) {
-		// 	return 10;
-		// } else if (flake.retweet_count > 500) {
-		// 	return 8;
-		// } else if (flake.retweet_count > 250) {
-		// 	return 5;
-		// } else if (flake.retweet_count > 100) {
-		// 	return 2;
-		// }
 		return (flake.retweet_count / 100);
 	};
 
